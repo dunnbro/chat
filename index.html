@@ -1,0 +1,344 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+		<link rel="stylesheet" type="text/css" href="css/chatstyle.css">
+  </head>
+  <body>
+	
+	<div id="container">
+		<div id="usernameWrap">
+			<p>Please enter your first name:</p>
+			<p id="usernameError"></p>
+			<form id="setname">
+				<input id="nickname"></input>
+				<input type="submit"></input>
+			</form>
+		</div>
+
+		<div id="users">
+			<h2>Users Present:</h2>
+			<p>(Click a name to start a private chat)</p>
+			<ul id="userlist"></ul>
+		</div>
+
+		<div class ="chat_area">
+			<div id="chatsection">
+				<div id="messagearea">
+					<div id="contentwrapper" class="chatwindow">
+						<ul class="chatconversation"></ul>
+						<form action="">
+							<input autocomplete="off" /><button>Send</button>
+						</form>
+					</div>
+				</div>
+
+				<div id="privatechatting">
+					<ul id="chatwith">
+						<li class="active"><span>Main Room</span></li>
+					</ul>
+				</div>
+			</div>
+			
+			<div id="submitwrapper">
+				<div>
+					<div id="entrywrapper">
+					</div>
+				</div>
+			</div>
+		</div><!-- close chat_area-->
+	</div><!--close div container-->
+
+		<script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+		<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+		<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+		<script src="//use.edgefonts.net/stencil-std;antic.js"></script>
+		<script>
+			var chatApp = {};
+			chatApp.init = function (){
+				var socket = io();
+				var client_username = [];
+
+				
+				//start private chat by clicking user name in list 
+				$('#userlist').on('click', 'li', function(){
+				$('.chatwindow').hide();
+
+				//gets local user's name
+				var usernamestr = client_username[0].toString();
+				var userlist = $(this).text();
+				//!!!!!!!!!!!! names with spaces in them is causing a bug!!!!!!!!!!!!!!!!!!!!!!!
+
+				if (!$('#chattab_' + userlist).length){
+						//adds tab below chat input box
+						$('#chatwith').append('<li class="grow" id="chattab_' + userlist +'"><span class=nameofuser>' + userlist + '</span><a class="close"></a></li>');
+						$('#chattab_' + userlist).css('width', '0px').animate({ width: '98px' }, 300, 'swing');
+				}
+				//if div doesn't exist yet for private chat with a user, create it
+				if (!$('#contentwrapper_'+userlist).length){
+					
+					//adds new private chat div
+					$('#messagearea').append('<div id="contentwrapper_' + userlist + '" class = "chatwindow"><ul class="chatconversation"></ul><form action=""><input autocomplete="off" /><button>Send</button></form></div>');
+				};
+				$('#chatwith>li.active').removeClass('active');
+				$('#userlist li').removeClass();
+				$('#contentwrapper_'+userlist).show();
+				$(this).addClass('active');
+				//prevents you from starting a private chat with yourself
+				$("#userlist li:contains('" + usernamestr + "')").addClass('notclickable');
+				
+				//when a name is clicked in the user list, the corresponding private chat tab beneath text entry box becomes active
+				
+				var selector = $('#chattab_' + userlist);
+				$(selector).addClass('active');
+				$(selector).removeClass('grow');
+				
+				//adjust size of private chat tabs if there are more than 5
+				if ($('#chatwith li').length > 5){
+					$('#chatwith li span').css('padding','0px');
+				}
+			});
+					
+
+			$('#chatwith').on('click', 'li', function(event){
+				//if you want to close a private chat that is not active, this prevents it from being made active when clicking the close (which is anchor) button (which makes it active, and screws everything up)
+				if ($(event.target).is ("a")){
+					closeTab();
+					return;
+				}
+				var chatwith = $(this).text();
+				var selector = $('#chatwith li:contains(' + chatwith +')');
+				var userlist = $('#userlist li:contains(' + chatwith +')');
+				var usernamestr = client_username[0].toString();
+				
+				$('#chatwith>li.active').removeClass('active');
+				$(this).removeClass('glow');
+				$('#userlist li').removeClass();
+				$('.chatwindow').hide();
+				//prevents you from starting a private chat with yourself
+				$("#userlist li:contains('" + usernamestr + "')").addClass('notclickable');
+				
+				if (chatwith ==='Main Room'){
+					$('#contentwrapper').show();	
+				} else {
+					$('#contentwrapper_'+ chatwith).show();
+				}
+				$(selector).addClass('active');
+				$(userlist).addClass('active');
+			});
+
+			
+			$('#messagearea').on('submit', 'form', function(e){
+				e.preventDefault();
+				//get id of visible (active) div
+				var roomname = $('#messagearea').children('div:visible').attr('id');
+				var recipient = roomname.split("_").pop();
+				//!!!!!!!!!!!!!!!!!!!!!!!!!!!should this be activeElement instead of visible element?
+				var roommessage = $('#'+roomname +' input').val();
+				//if input is empty but is sent anyway, don't even send to the server 
+				if (roommessage === ""){
+					return;
+				}
+				data = {name: roomname, message: roommessage, sender: client_username[0], recipient: recipient };
+				socket.emit('chat message', data);
+				
+				//clears the form and adds focus to input (if send button is clicked with mouse)
+				$('#messagearea form input').val('').focus(); 
+			});
+
+			$('#privatechatting').on('click', 'a.close', closeTab);
+
+				function closeTab(){
+				var username = $(this).prev().text();
+				console.log(username);
+				var chattab = $('#chattab_' + username);
+				var userlist = $('#userlist li:contains(' + username +')');
+				
+				chattab
+					.animate({
+						color: 'silver'
+					},{
+						//queue: false,
+						duration: 100
+					})
+					.animate({ 
+						width: '0px',
+						backgroundColor: 'white',
+					},{
+						duration: 250,
+						easing: 'easeInQuad',
+						complete: function() { chattab.remove(); }
+					});
+				
+				//display main room tab when tab is closed (so you don't private chat with the wrong person accidentally!!!!)
+				if ($(this).parent().hasClass('active')){
+					$('.chatwindow').hide();
+					$('#contentwrapper').show();
+					//clears form if you've typed a message in a private chat window but didn't send it, then close the private chat, so that you don't accidentally send a chat that was meant to be private to the whole room 
+					$('#contentwrapper input').trigger("reset");
+					$('#chatwith li').first().addClass('active');
+				}
+				
+				//!!!!not very smooth right now
+				if ($('#chatwith li').length < 7){
+					$('#chatwith li span').css('padding','9px');
+				}
+				
+				$(userlist).removeClass('active');
+			};
+
+			socket.on('new message', function(msg, callback){
+				var roomname = msg.name;
+				console.log(roomname);
+				var m = msg.sender.toString();
+				var c = client_username[0].toString();
+				var selfsent = function() {
+							console.log($('#'+roomname));
+							$('#'+roomname+' ul').append('<li class="self">' + '<b>' + "Me" + ":" + '</b>' + " " +  msg.message);
+						}
+				
+				var mainroom = function () {
+					if (m === c){
+						
+						selfsent();
+					} else {
+							$('#'+roomname+' ul').append('<li class="others">' + '<b>' + msg.sender + ":" + '</b>' + " " + msg.message);
+							//if you receive a message with the main room tab not showing, add class of glow to signify a new message has been posted
+							if (!$('#chatwith li:contains(Main Room)').hasClass("active")){
+								$('#chatwith li:contains(Main Room)').addClass("glow");
+							}
+						}
+				}
+				
+				var privateroom = function() {
+					//if you've sent the message
+					if (m === c){
+						selfsent();
+						return;
+					}
+				
+					//if chat window with sender exists but is not active, add class 'glow' to signify a new message
+					if (!$('#chatwith li:contains(' + msg.sender + ')').hasClass('active')){
+						$('#chatwith li:contains(' + msg.sender + ')').addClass('glow');
+					}
+					
+					//if client is receiving new message, create div for message
+					if (!$('#contentwrapper_' +msg.sender).length){
+						//$('#chatwith').append('<li><span>' + msg.sender + '</span><a class="close"></a></li>');
+						$('#chatwith').append('<li class="grow" id="chattab_' + msg.sender +'"><span class=nameofuser>' + msg.sender + '</span><a class="close"></a></li>');
+						//adds new private chat div
+						$('#messagearea').append('<div id="contentwrapper_'+msg.sender+'" class = "chatwindow"><ul class="chatconversation" ></ul><form action=""><input autocomplete="off" /><button>Send</button></form></div>');
+						// show the div since it's a message from someone new
+						$('#messagearea div').hide();
+						$('#contentwrapper_' +msg.sender).show();
+						$('#chatwith>li.active').removeClass('active');
+						$('#chatwith li:contains(' + msg.sender + ')').addClass('active');
+						var selector = $('#chattab_' + msg.sender);
+						$(selector).removeClass('grow');
+					} 
+					
+					//if private chat has happened between users 'x' and 'y', but user 'x' closed the private chat tab, this allows it to be reopened when a message is sent again to user 'x' from user 'y'
+					if ($('#contentwrapper_' +msg.sender).length){
+						if (!$('#chattab_'+ msg.sender).length){
+							$('#chatwith').append('<li class="grow" id="chattab_' + msg.sender +'"><span class=nameofuser>' + msg.sender + '</span><a class="close"></a></li>');
+							// show the div since it's a message from someone new
+							$('#messagearea div').hide();
+							$('#contentwrapper_' +msg.sender).show();
+							$('#chatwith>li.active').removeClass('active');
+							$('#chatwith li:contains(' + msg.sender + ')').addClass('active');
+							var selector = $('#chattab_' + msg.sender);
+							$(selector).removeClass('grow');
+						}
+					}
+					
+					//!!!!!!!!!write something so that --- if private chat is going with user x, then you (user y) close the chat, if user x sends you another private message, it actually reopens and creates a chat tab again
+					
+					
+					//if client already has chat going with sender, just append the message
+					$('#contentwrapper_'+msg.sender+' ul').append('<li class="self">' + '<b>' + msg.sender + ":" + '</b>' + " " +  msg.message);
+				}
+					
+				roomname === "contentwrapper" ? mainroom() : privateroom();
+			});
+			
+			$('#setname').submit(function(e){
+				e.preventDefault();
+				var str = $('#nickname').val().trim();
+				var myusername = str.split(" ", 1);
+				socket.emit('new user', myusername , function(data){
+					if(data){
+						$('#usernameWrap').hide();
+						$('#contentwrapper').show();
+						$('#privatechatting').show();
+						$('#users').show();
+						//only save as username once it has been confirmed on the server that the username doesn't already exist
+						client_username.push(myusername);
+					} else {
+						$('#usernameError').html('Please choose a different username');
+					}
+				});
+			});
+
+
+			//updates user list when a new user joins the chat
+			socket.on ('usernames', function(data){
+				var html = '';
+				var checkedUserNames =[];
+				var usernamestr = client_username[0].toString();
+
+				function noSelfChat() {
+					
+					$("#userlist li:contains('" + usernamestr + "')").addClass('notclickable');
+				}
+
+				for(i=0; i < data.length; i++){
+					var servername = data[i].toString();
+					//so that you appear with '(you)' next to your name in the Users Present list -- then pushes user names to a new 'checkedUserNames' array
+					
+					if (usernamestr === servername){
+						checkedUserNames.push(data[i] + ' ' + '(you)');
+					} else {
+						checkedUserNames.push(data[i]);
+					}
+				}
+
+				//alphabetize user names in user list, case insensitive
+				function insensitive(s1, s2) {
+  				var s1lower = s1.toLowerCase();
+				  var s2lower = s2.toLowerCase();
+				  return s1lower > s2lower? 1 : (s1lower < s2lower? -1 : 0);
+				}
+				checkedUserNames.sort(insensitive);
+
+				for (j=0; j < checkedUserNames.length; j++) {
+					
+					html += '<li>' + checkedUserNames[j] + '</li>';
+					$('#userlist').html(html);
+					noSelfChat();
+
+				}	
+
+				
+				
+				
+			});
+
+
+
+			socket.on('connectered', function(data){
+					$('#contentwrapper ul').append($('<li>').text(data));
+			});
+
+			socket.on('exit', function(data){
+				$('#contentwrapper ul').append($('<li>').text(data));
+			});
+			}
+			//$( '#users').resizable();
+chatApp.init();
+
+			
+		</script>
+		
+  </body>
+</html>

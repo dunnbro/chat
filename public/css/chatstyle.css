@@ -1,0 +1,90 @@
+ * { margin: 0; padding: 0; box-sizing: border-box; }
+body { font: 13px Arial, sans-serif; height:100%; position:relative;}
+h2 { font: 18px Arial, sans-serif; }
+.chatwindow {margin: 0; padding: 0; border: 2px solid black; width:498px; height: calc(100vh - 125px); min-height: 150px; overflow:auto; }
+.chatwindow ul { padding:10px;}
+.chatwindow form{ position: absolute; bottom: -50px; }
+.chatwindow form input { border: 2px solid grey; padding: 11px; width:398px;  margin-right: 2px; margin-left: -1px; height: 40px;}
+.chatwindow input {font: 13px Arial, sans-serif}
+.chatwindow form button {font: 13px Arial, sans-serif; width: 98px; background: rgb(130, 224, 255); border: 2px solid grey; height: 40px; }
+
+.chatconversation li {list-style: none; padding-bottom: 7px;}
+
+/*prevents you from starting a private chat with yourself*/
+.notclickable {pointer-events: none; color:#ccc;}
+
+/*indicates who you are privately chatting with*/
+#chatwith li.active {background-color: orange;}
+#userlist li.active {color: orange;}
+
+/*open but inactive private chat glow effect, to let you know you have a new message*/
+.glow{
+  color: #fff;
+  background-color: #ff3296;
+  animation-name: example;
+  animation-duration: 6s;
+  animation-direction:alternate; 
+  animation-iteration-count:infinite; 
+}
+
+@keyframes example {
+  0% {background-color: red;} 
+  50% {background-color: pink;}
+}
+
+form button {cursor: pointer;}
+#chatwith li.grow{width:0px; border: 0px solid orange;}
+    
+#privatechatting {display: none; position: relative; bottom:-52px; width:500px; }
+#chatwith {width: 100%; text-align: center; margin-left: -1px;}
+#chatwith li {position: relative; display:block; list-style:none; float: left; border: 2px solid black; width: 98px; overflow:hidden; margin:0 1px;}
+#chatwith li span {display:inline-block; width: 100%; margin: 0 auto; padding: 9px; }
+#chatwith li {cursor: pointer;}
+
+/*button to close private chat window*/
+a.close{
+    position: absolute;
+    float: right; 
+    top:1px;
+    right:1px;
+    cursor:pointer;
+    color: #000;
+    border: 2px solid #000;
+    border-radius: 0px;
+    background: #fff;
+    font-size: 11px;
+    font-weight: bold;
+    display: block;
+    line-height: 4px;
+    padding: 3px 2px;
+    padding-bottom: 5px
+}
+
+a.close:hover {
+  background-color: grey;
+  color: whitesmoke;
+}
+
+.close:before {
+    content: "x";
+
+}
+
+
+#messages { list-style-type: none; margin: 0; padding: 0; }
+#messages li { padding: 5px 10px; }
+#messages li:nth-child(odd) { background: #eee; }
+#contentwrapper { display: none; }
+#privatechatting {display: none;}
+#users {display:none; overflow: hidden; border: 2px solid #2B4012; height:calc(100vh - 36px); min-height: 239px; width: 200px; position: absolute; left:10px; top:10px; padding:10px}
+#userlist li {cursor: pointer;}
+#sideroom {display: none;}
+
+#messagearea {display: block;}
+#messagearea form {margin-bottom: 4px;margin-left: -1px;}
+
+#users p {font-style: italic; font-size: 10.5px; margin-bottom: 5px; font-weight: 00;}
+#users ul {list-style-type: none;}
+
+#chatsection {position: relative; top: 10px; left:220px; }
+/*#users p {display: block;}
